@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14213D">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png">
+<title>Placement Management System</title>
+<style>
+:root{--bg:#EEF1F6;--ink:#14213D;--mut:#5B6578;--card:#fff;--acc:#F4A300;--ok:#1B7F5C;--no:#B3402B;--line:#D7DDE8}
+*{box-sizing:border-box;margin:0}
+body{font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:76px}
+header{background:var(--ink);color:#fff;padding:20px 18px 18px;padding-top:max(20px,env(safe-area-inset-top))}
+header h1{font-size:20px;font-weight:700}header p{color:#B9C3D9;font-size:14px;margin-top:2px}
+main{padding:14px 14px 0;max-width:640px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.card h3{font-size:17px}.meta{color:var(--mut);font-size:14px;margin-top:2px}
+.pkg{font-weight:700;white-space:nowrap}
+.tag{display:inline-block;font-size:13px;padding:2px 9px;border-radius:99px;margin-top:8px}
+.t-ok{background:#DDF3EA;color:var(--ok)}.t-no{background:#F8E1DB;color:var(--no)}.t-done{background:#FFF0CC;color:#8A5B00}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:10px 14px;background:var(--ink);color:#fff;margin-top:10px;width:100%;cursor:pointer}
+button:disabled{background:var(--line);color:var(--mut);cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,nav a:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
+input,select{font:inherit;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav a{flex:1;text-align:center;padding:14px 4px;color:var(--mut);font-weight:600;text-decoration:none;border-top:3px solid transparent}
+nav a.on{color:var(--ink);border-top-color:var(--acc)}
+.empty{text-align:center;color:var(--mut);padding:36px 10px}
+#toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+</style></head><body>
+<header><h1>Placement Management System</h1><p id="hi"></p></header>
+<main id="app"></main>
+<div id="toast" role="status"></div>
+<nav><a href="#jobs" id="n-jobs">Drives</a><a href="#applied" id="n-applied">Applied</a><a href="#profile" id="n-profile">Profile</a></nav>
+<script>
+const DRIVES=[
+{id:1,co:"Infosys",role:"Systems Engineer",pkg:"3.6 LPA",cgpa:6,back:0,br:["BCA","MCA","BTech"],date:"12 Nov 2026"},
+{id:2,co:"TCS",role:"Assistant System Engineer",pkg:"3.4 LPA",cgpa:6,back:1,br:["BCA","MCA","BTech"],date:"18 Nov 2026"},
+{id:3,co:"Wipro",role:"Project Engineer",pkg:"3.8 LPA",cgpa:6.5,back:0,br:["BCA","MCA"],date:"25 Nov 2026"},
+{id:4,co:"Zoho",role:"Software Developer",pkg:"7 LPA",cgpa:8,back:0,br:["BCA","MCA","BTech"],date:"2 Dec 2026"},
+{id:5,co:"Capgemini",role:"Analyst",pkg:"4 LPA",cgpa:6.5,back:0,br:["MCA","BTech"],date:"9 Dec 2026"}];
+const S=JSON.parse((()=>{try{return localStorage.getItem("pms")}catch(e){return null}})()||'{"p":{"name":"","branch":"BCA","cgpa":7,"back":0},"applied":[]}');
+const save=()=>{try{localStorage.setItem("pms",JSON.stringify(S))}catch(e){}};
+const $=s=>document.querySelector(s);
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)}
+function check(d){const p=S.p;
+ if(!d.br.includes(p.branch))return"Not open for "+p.branch;
+ if(p.cgpa<d.cgpa)return"Needs CGPA "+d.cgpa+" or above";
+ if(p.back>d.back)return d.back?"Max "+d.back+" backlog allowed":"No backlogs allowed";return""}
+function jobs(){return DRIVES.map(d=>{const r=check(d),a=S.applied.includes(d.id);
+ return`<div class="card"><div class="row"><h3>${d.co}</h3><span class="pkg">${d.pkg}</span></div>
+ <div class="meta">${d.role} · Drive on ${d.date}</div>
+ <div class="meta">Needs CGPA ${d.cgpa}+, ${d.back?"up to "+d.back+" backlog":"no backlogs"}</div>
+ ${a?'<span class="tag t-done">Applied</span>':r?`<span class="tag t-no">${r}</span>`:'<span class="tag t-ok">You are eligible</span>'}
+ <button ${a||r?"disabled":""} onclick="apply(${d.id})">${a?"Applied":"Apply to "+d.co}</button></div>`}).join("")}
+function applied(){const l=DRIVES.filter(d=>S.applied.includes(d.id));
+ return l.length?l.map(d=>`<div class="card"><div class="row"><h3>${d.co}</h3><span class="pkg">${d.pkg}</span></div><div class="meta">${d.role} · Drive on ${d.date}</div><span class="tag t-done">Application sent</span><button onclick="withdraw(${d.id})">Withdraw application</button></div>`).join(""):'<div class="empty">No applications yet. Open Drives and apply to one you are eligible for.</div>'}
+function profile(){const p=S.p;return`<div class="card"><h3>Your details</h3><div class="meta">Eligibility on the Drives tab updates from these.</div>
+ <label for="pn">Full name</label><input id="pn" value="${p.name}" autocomplete="name">
+ <label for="pb">Course</label><select id="pb">${["BCA","MCA","BTech"].map(b=>`<option ${b==p.branch?"selected":""}>${b}</option>`).join("")}</select>
+ <label for="pc">CGPA</label><input id="pc" type="number" step="0.1" min="0" max="10" value="${p.cgpa}" inputmode="decimal">
+ <label for="pk">Active backlogs</label><input id="pk" type="number" min="0" value="${p.back}" inputmode="numeric">
+ <button onclick="saveP()">Save profile</button></div>`}
+function saveP(){S.p={name:$("#pn").value.trim(),branch:$("#pb").value,cgpa:+$("#pc").value||0,back:+$("#pk").value||0};save();toast("Profile saved");render()}
+function apply(id){S.applied.push(id);save();toast("Application sent");render()}
+function withdraw(id){S.applied=S.applied.filter(x=>x!==id);save();toast("Application withdrawn");render()}
+function render(){const h=(location.hash||"#jobs").slice(1);
+ ["jobs","applied","profile"].forEach(k=>$("#n-"+k).classList.toggle("on",k==h));
+ $("#hi").textContent=S.p.name?"Hello, "+S.p.name:"Set up your profile to check eligibility";
+ $("#app").innerHTML=h=="applied"?applied():h=="profile"?profile():jobs()}
+addEventListener("hashchange",render);render();
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script></body></html>
